@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>quadraimob · Central de Processos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand:        #66cff5;
+      --brand-deep:   #1fa8d8;
+      --brand-dim:    rgba(102,207,245,0.13);
+      --brand-border: rgba(102,207,245,0.38);
+      --bg:        #eef3f9;
+      --surface:   #ffffff;
+      --surface-2: #e6edf6;
+      --surface-3: #d8e4ef;
+      --text-1: #0d1c2e;
+      --text-2: #3a5870;
+      --text-3: #7a9ab5;
+      --border:   rgba(0,0,0,0.08);
+      --border-2: rgba(0,0,0,0.15);
+      --radius: 12px;
+      --radius-sm: 9px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text-1);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      width: 800px; height: 800px;
+      right: -200px; top: -200px;
+      background: radial-gradient(circle, rgba(102,207,245,0.12) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none; z-index: 0;
+    }
+
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* HEADER */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: #0d1520;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .hdr {
+      max-width: 1440px; margin: 0 auto;
+      padding: 0 28px; height: 74px;
+      display: flex; align-items: center; gap: 18px;
+    }
+    .logo {
+      text-decoration: none; flex-shrink: 0;
+      display: flex; align-items: center;
+    }
+    .logo img {
+      height: 42px;
+      width: auto;
+      display: block;
+    }
+    .hdr-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+    .hdr-lbl {
+      font-size: 11px; color: rgba(255,255,255,0.4);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      font-weight: 500; flex-shrink: 0;
+    }
+    .search-wrap {
+      position: relative; flex: 1;
+      max-width: 440px; margin-left: auto;
+    }
+    .search-ico {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.35); pointer-events: none; display: flex;
+    }
+    #searchInput {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      padding: 9px 38px 9px 37px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    #searchInput::placeholder { color: rgba(255,255,255,0.35); }
+    #searchInput:focus {
+      border-color: rgba(102,207,245,0.5);
+      background: rgba(255,255,255,0.12);
+      box-shadow: 0 0 0 3px rgba(102,207,245,0.15);
+    }
+    #searchClear {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer;
+      width: 24px; height: 24px; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+    #searchClear:hover { color: #fff; background: rgba(255,255,255,0.1); }
+    #searchClear.show { display: flex; }
+
+    /* STATS */
+    .stats-strip {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .stats-inner {
+      max-width: 1440px; margin: 0 auto;
+      padding: 10px 28px;
+      display: flex; align-items: center;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .stats-inner::-webkit-scrollbar { display: none; }
+    .stat {
+      display: flex; align-items: center; gap: 8px;
+      padding: 3px 18px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .stat:first-child { padding-left: 0; }
+    .stat:last-child  { border-right: none; }
+    .stat-pip { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .stat-lbl { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+    .stat-val { font-size: 13px; font-weight: 600; color: var(--text-1); }
+
+    /* MAIN */
+    .main { padding: 34px 0 100px; }
+
+    /* CATEGORY TABS */
+    #catTabs {
+      display: flex; gap: 3px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 4px;
+      width: fit-content; margin-bottom: 22px;
+    }
+    .cat-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 22px; border-radius: 9px; border: none;
+      background: transparent; color: var(--text-3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px; font-weight: 500;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap;
+    }
+    .cat-btn:hover:not(.active) { color: var(--text-1); background: var(--border); }
+    .cat-btn.active { background: var(--brand); color: #071420; font-weight: 700; }
+    .cat-badge {
+      font-size: 11px; font-weight: 700;
+      padding: 1px 7px; border-radius: 20px;
+      background: rgba(0,0,0,0.15);
+    }
+
+    /* AREA CHIPS */
+    #areaFilters {
+      display: flex; flex-wrap: wrap; gap: 7px;
+      margin-bottom: 30px;
+    }
+    .achip {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 50px;
+      border: 1px solid var(--border-2);
+      background: var(--surface);
+      color: var(--text-2);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12.5px; font-weight: 500;
+      cursor: pointer; transition: all 0.18s; white-space: nowrap;
+    }
+    .achip:hover:not(.active) { color: var(--text-1); border-color: rgba(0,0,0,0.25); background: var(--surface-2); }
+    .cpip { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* SEARCH BANNER */
+    #searchBanner {
+      display: none; align-items: center; gap: 10px;
+      padding: 12px 16px; border-radius: var(--radius-sm);
+      background: var(--brand-dim);
+      border: 1px solid var(--brand-border);
+      margin-bottom: 26px;
+      font-size: 13.5px; color: var(--text-2);
+    }
+    #searchBanner.show { display: flex; }
+    #searchBanner strong { color: var(--brand-deep); }
+
+    /* AREA SECTION */
+    .area-sec { margin-bottom: 42px; }
+    .area-head {
+      display: flex; align-items: center; gap: 11px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 15px;
+    }
+    .area-ico {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .area-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 15.5px; font-weight: 700;
+      color: var(--text-1); letter-spacing: -0.2px;
+    }
+    .area-cat {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+      border: 1px solid; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .area-cnt {
+      margin-left: auto;
+      font-size: 11.5px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* PROCESS GRID */
+    .pgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+      gap: 10px;
+    }
+
+    /* PROCESS CARD */
+    .pcard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 15px 16px;
+      display: flex; flex-direction: column; gap: 13px;
+      transition: transform 0.18s cubic-bezier(.34,1.4,.64,1),
+                  border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      animation: fadeUp 0.35s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(9px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .pcard:hover {
+      transform: translateY(-3px);
+      background: var(--surface);
+      border-color: var(--brand-border);
+      box-shadow: 0 8px 24px rgba(102,207,245,0.18), 0 2px 8px rgba(0,0,0,0.07);
+    }
+    .card-tag {
+      font-size: 10.5px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+      width: fit-content; display: none;
+    }
+    .pname {
+      font-size: 13.5px; font-weight: 500;
+      color: var(--text-1); line-height: 1.42;
+    }
+    .pname mark {
+      background: rgba(102,207,245,0.2);
+      color: var(--brand); border-radius: 3px;
+      padding: 0 2px; font-style: normal;
+    }
+    .cbtns { display: flex; gap: 7px; }
+    .dbtn {
+      flex: 1; display: flex; align-items: center;
+      justify-content: center; gap: 5px;
+      padding: 7px 10px; border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11.5px; font-weight: 600;
+      letter-spacing: 0.03em; cursor: pointer;
+      transition: all 0.15s; position: relative;
+    }
+    .dbtn:hover { color: var(--text-1); background: var(--surface-3); border-color: var(--border-2); }
+    .dbtn.pop:hover  { color: var(--brand-deep); border-color: rgba(102,207,245,0.5); background: rgba(102,207,245,0.12); }
+    .dbtn.flux:hover { color: #0d9e7e; border-color: rgba(13,158,126,0.35);  background: rgba(13,158,126,0.08);  }
+
+    /* Indicador de documento não elaborado */
+    .dbtn-na {
+      flex: 1; display: flex; align-items: center;
+      justify-content: center; gap: 5px;
+      padding: 7px 10px; border-radius: 7px;
+      border: 1px dashed var(--border-2);
+      background: transparent;
+      color: var(--text-3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 500;
+      font-style: italic; letter-spacing: 0.01em;
+      user-select: none;
+    }
+
+    .dbtn::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 7px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border-2);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+      color: var(--text-2); font-size: 11px; padding: 5px 10px;
+      border-radius: 6px; white-space: nowrap;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.12s; z-index: 50; font-weight: 400;
+    }
+    .dbtn:hover::after { opacity: 1; }
+
+    /* EMPTY */
+    #emptyState {
+      display: none; flex-direction: column;
+      align-items: center; gap: 13px;
+      padding: 80px 24px; text-align: center;
+    }
+    #emptyState.show { display: flex; }
+    .empty-ico {
+      width: 50px; height: 50px; border-radius: 14px;
+      background: var(--surface-2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3);
+    }
+    .empty-t { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; color: var(--text-2); }
+    .empty-s { font-size: 13px; color: var(--text-3); }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 18px 28px; text-align: center;
+      font-size: 12px; color: var(--text-3); letter-spacing: 0.03em;
+    }
+    footer strong { color: var(--brand-deep); font-weight: 600; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hdr-sep, .hdr-lbl { display: none; }
+      .search-wrap { max-width: none; }
+      .pgrid { grid-template-columns: 1fr 1fr; }
+      #catTabs { width: 100%; }
+      .cat-btn { flex: 1; justify-content: center; font-size: 12.5px; padding: 9px 10px; }
+    }
+    @media (max-width: 520px) {
+      .wrap, .hdr, .stats-inner { padding-left: 16px; padding-right: 16px; }
+      .pgrid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <a href="#" class="logo" aria-label="quadraimob">
+      <img src="data:image/webp;base64,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" alt="quadraimob">
+    </a>
+    <div class="hdr-sep"></div>
+    <span class="hdr-lbl">Central de Processos</span>
+    <div class="search-wrap">
+      <span class="search-ico" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </span>
+      <input id="searchInput" type="text" placeholder="Buscar processo..." autocomplete="off" aria-label="Buscar processo">
+      <button id="searchClear" onclick="clearSearch()" aria-label="Limpar busca">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="stats-strip">
+  <div class="stats-inner" id="statsInner"></div>
+</div>
+
+<main class="main">
+  <div class="wrap">
+    <div id="catTabs" role="tablist"></div>
+    <div id="areaFilters" role="group" aria-label="Filtrar por área"></div>
+    <div id="searchBanner" role="status" aria-live="polite"></div>
+    <div id="contentArea"></div>
+    <div id="emptyState" role="status">
+      <div class="empty-ico">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <div class="empty-t">Nenhum resultado</div>
+      <div class="empty-s">Tente buscar por outro termo.</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Desenvolvido para <strong>quadraimob</strong> pelo <span style="color:#6f12ff;font-weight:600;">Grupo Gestão</span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DADOS — Substitua cada "#" pelo link real do Google Drive
+// Exemplo: popUrl: 'https://drive.google.com/file/d/SEU_ID/view'
+// ═══════════════════════════════════════════════════════════════════
+const DATA = {
+  categories: [
+    {
+      id: 'remodelados',
+      name: 'Processos Remodelados',
+      areas: [
+        {
+          id: 'secretaria-vendas',
+          name: 'Secretaria de Vendas',
+          icon: 'briefcase',
+          color: '#66cff5',
+          processes: [
+            { id: 1,  name: 'Confecção da Carta Proposta',        popUrl: 'https://docs.google.com/document/d/1zhnL7MYp8t-Ewu0-etuoDurblJaq8u5Gw3hW18ir-UU/edit?usp=sharing', fluxUrl: '#' },
+            { id: 2,  name: 'Confecção e Assinatura de Contrato', popUrl: 'https://docs.google.com/document/d/1sZdQVSREWPaAx8QMXC1z1XC4pTaD8vZsss0CnnQsXyk/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/11iuzQdhstJh_jzznEgqSMpVhnfrs3VFi/view?usp=drive_link' },
+            { id: 3,  name: 'Desfazimento de Proposta',           popUrl: 'https://docs.google.com/document/d/191-GfATnt86ecLKpUWw1jOV2ypxwxxJDcrkUFbO8i00/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1PBJf3CVdS_QndIk8532mZKOAQM8PPkOe/view?usp=drive_link' },
+            { id: 4,  name: 'Macroprocesso de Vendas',            popUrl: '#', fluxUrl: 'https://drive.google.com/file/d/1l_oWjSAmWrCZ1wtJfZBpbMdawXJr0dZB/view?usp=drive_link' },
+          ]
+        },
+        {
+          id: 'relacionamento-clientes',
+          name: 'Relacionamento com ClienteS',
+          icon: 'users',
+          color: '#0d9e7e',
+          processes: [
+            { id: 5,  name: 'Credenciamento de Corretores',          popUrl: 'https://docs.google.com/document/d/1gj8hx19n7RL7Zjkxs3TY5cTc59m0X3NLNHKOn6QA58o/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/18OadYU3CUgYdYhcCE0za8mkiSbuW7U3K/view?usp=drive_link' },
+            { id: 6,  name: 'Descredenciamento de Corretores',       popUrl: 'https://docs.google.com/document/d/1LFRKpm7TKVSod8oYHsKd3X-mUt5mws73LV4rbSBROfk/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1Qtct5AwH8KLRCor5P_PDUf-gn1J_mOp7/view?usp=drive_link' },
+            { id: 7,  name: 'Entrega da Documentação do Cliente',    popUrl: 'https://docs.google.com/document/d/1EUwF5a4akbLNJaXgm3EyPjS1E3ApeKg55axNT3dCYHs/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1R6WjrBWCha2t-0i-hRj01QBYSQM2AbjM/view?usp=drive_link' },
+            { id: 8,  name: 'Pesquisa de Satisfação do Cliente',     popUrl: 'https://docs.google.com/document/d/1D7UDY5B9JFh5SAelXHFv80CUdfRhgs-U4KR8oeXeksk/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1sy049Ya2Bo4emWIRVUSjgsA_96BHFXLc/view?usp=drive_link' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'novos',
+      name: 'Novos Processos',
+      areas: [
+        {
+          id: 'adm-financeiro',
+          name: 'Administrativo + Financeiro',
+          icon: 'chart',
+          color: '#ffad5e',
+          processes: [
+            { id: 9,  name: 'Admissão de Funcionários',          popUrl: 'https://docs.google.com/document/d/1E4ky_42SnG2_xG8jXzF1z2focbAH4VEj_0eYXcSHmAo/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1gB8MS9T3B5EsScKLzVRn1-QvujYNqzGy/view?usp=drive_link' },
+            { id: 10, name: 'Cadastro Sistema de Ponto',         popUrl: 'https://docs.google.com/document/d/17T7onSs9iWvBPxAANv_BPHYFMoQVhnkfJqei3qMx1Qg/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1b__S6XRxeesz5MRTGkjN6NBTclxkWJ-c/view?usp=drive_link' },
+            { id: 11, name: 'Comissionamento',                   popUrl: 'https://docs.google.com/document/d/1fQ9ou4-f9qhuziKDpwk9Yshp85nM3bc0C1IXh2Ni6Hs/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/open?id=1zcaRFDE1YR-bgwW2rlImhf_PYh4-TUar&usp=drive_copy' },
+            { id: 12, name: 'Compras (quadraImob)',              popUrl: 'https://drive.google.com/open?id=1iYWzcoUlrPgWPURpwAS16FpWQ-9ZffmzehGyMY4OaHo&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1-nxAFEYPbhjxLDxBiKu64zqF1aNOz8P0&usp=drive_copy' },
+            { id: 13, name: 'Compras (quadracred)',              popUrl: 'https://drive.google.com/open?id=1gtZayjFSTSnvnmHZtx5-2oT5W7a6YQ3h1lYcTUIC0oY&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1wO4Nr4c7Dw0XYGjkVS66ALD5oKlerFPe&usp=drive_copy' },
+            { id: 14, name: 'Conciliação Bancária',              popUrl: 'https://drive.google.com/open?id=1ZoNmRWmWkMHlFWDtcrMLbTI1TOPfDoo52FRy2NyD9Wc&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1Q_rTFYrGj7hDBikBYjUL46fymC3aG1XB&usp=drive_copy' },
+            { id: 15, name: 'Confecção de Relatórios - AGMs',   popUrl: 'https://drive.google.com/open?id=1SZOKM_b_n33-StVR0ISPqusJWExLTMUH9RGm4dVyIjo&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1k0vYUbfZTgVQvambKgFf4zLG2shhjTXL&usp=drive_copy' },
+            { id: 16, name: 'Contas a Pagar',                   popUrl: 'https://drive.google.com/open?id=1hrofBqHCQ_Ik5IhRCbfuzwmPdHsCffE2_Z8sGjPF06Q&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1WiGDWz7COQjudwQXRMXX_F41QXQesHRQ&usp=drive_copy' },
+            { id: 17, name: 'Controle de Férias',               popUrl: 'https://drive.google.com/open?id=119aJaOcL3DOIMtsUYRFx9qMcVC1k8l-r8fD5Hbk-Ud0&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1lRgnhIe9J8nfM95lmGIHibs8SP5GXmim&usp=drive_copy' },
+            { id: 18, name: 'Controle de Caixinha',             popUrl: 'https://drive.google.com/open?id=185WeeagwA_5K-6vBv0jLibsmI0qCq7HuVN69zlAz1CA&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1KaQfW-a-xpyCXbcvYW7CVNnykfEWe6_v&usp=drive_copy' },
+            { id: 19, name: 'Controle do Cofre',                popUrl: 'https://drive.google.com/open?id=1g99IYNvSsH3f-ZAOgH_7Q6dAryn_uETAjP_Rjr1FuT4&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1fy-rII-sGMLVrxX3H-TrzxKrHdxp4Xyf&usp=drive_copy' },
+            { id: 20, name: 'Controle Periódico de Ponto',      popUrl: 'https://drive.google.com/open?id=1Bs-8PrEcptwOKPFQIAxMFvohnR4jpXO3a0Yn_AfcP9E&usp=drive_copy', fluxUrl: '#' },
+            { id: 21, name: 'Controle Serasa',                  popUrl: 'https://drive.google.com/open?id=1dLZoxTmjEnKjmIJfcXwWCPkArKB6-jCs1UJGUEoie1o&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1proau9kFXsJRSbvMpO6R5ieSrWAhTBgj&usp=drive_copy' },
+            { id: 22, name: 'Demissão de Funcionários',         popUrl: 'https://drive.google.com/open?id=1kIuDRLTLVS4AAleTDDkWDstG03mPEXu7LZNmm7Ey8zE&usp=drive_copy', fluxUrl: '#' },
+            { id: 23, name: 'DIMOB',                            popUrl: 'https://drive.google.com/open?id=15rvmof0D6pYBXkBpHWMidgea5tJ8eD5NUSXlV4-bhh4&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1LyzJ5TNn-EOGcxTbzV0P8gRZGOgSSy-F&usp=drive_copy' },
+            { id: 24, name: 'Gestão da Folha de Pagamento',     popUrl: 'https://drive.google.com/open?id=1shL2EHW9THws6vriYpsORzzCvgbnKDu2NtIP3bbZYOU&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1RNhUEqcHRxM271YLXVfQTA0j5Yy2qbuH&usp=drive_copy' },
+            { id: 25, name: 'Manutenções',                      popUrl: 'https://drive.google.com/open?id=1SArAWpMqptvdKav4RnOFVtrI2mrSMuiKst4P9foLmDE&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1OsnhrT_T_Ujgb5RJLumz70tgDEisROG3&usp=drive_copy' },
+            { id: 26, name: 'Planilha de Rateio',               popUrl: 'https://drive.google.com/open?id=1ERwdBBv_ONTi4dZCD7XR5IHzmXMxmtiml49IFfVfPaU&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1IqHQwapY9S6C1cTOC6Tvqjc0LH_b_Rb3&usp=drive_copy' },
+            { id: 27, name: 'Recrutamento de Funcionário',      popUrl: 'https://drive.google.com/open?id=1tUEGiXmDxNTdf1qlN8ia-85JudgXtbj7lqfgfZ8mweM&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1KA1gq5LKOTn_0vsC3yQNouKS8fDtgvIw&usp=drive_copy' },
+            { id: 28, name: 'Solicitação de Crachá',            popUrl: 'https://drive.google.com/open?id=1eroJt3RE6rthzYAwOcqB14EnmsUf7Gvgm1AXxVUiEQI&usp=drive_copy', fluxUrl: 'https://drive.google.com/open?id=1Kj4bHeur1Z8PnyAUpS--EqTGEW53EM9F&usp=drive_copy' },
+          ]
+        },
+        {
+          id: 'marketing',
+          name: 'Marketing',
+          icon: 'megaphone',
+          color: '#c97ef5',
+          processes: [
+            { id: 29, name: 'Atualização do Guia Imobiliário',                       popUrl: 'https://docs.google.com/document/d/1qz17cRHyKf3kwVhP8b9f6COs7eZxk_28W85Ac39qA_0/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1vtslNjzzHwL7a9FSgWvSKiQq50PU3Tv0/view?usp=sharing' },
+            { id: 30, name: 'Contratação de Terceiros - Faixa, Placa e Banner',      popUrl: 'https://docs.google.com/document/d/18uMmtEm_TCnyg1j0-DXzAxAUMYgIzvkl2vnShGZAK5s/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1MkfBB_NYDPVEBW4jLOaz4RT8XZBHIy28/view?usp=sharing' },
+            { id: 31, name: 'Contratação de Terceiros Padrão',                       popUrl: 'https://docs.google.com/document/d/1Wer_j1LfrAT9o-QynKYaHk1kcUP59cPaHaazxwTWYew/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1mzfcVGiifYwJkWQmpace2RuZuQEIwBlh/view?usp=sharing' },
+            { id: 32, name: 'Criação de Atas de Reunião Interna',                    popUrl: 'https://docs.google.com/document/d/1G419o44Fb0iltR6FjToQWjuE4w7vGU1XzyvSE-DawaQ/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1dNNTi7wsJjenggykT9E9oKgVa2Y0HLlY/view?usp=sharing' },
+            { id: 33, name: 'Divulgação da Galeria dos Campeões',                    popUrl: 'https://docs.google.com/document/d/1y-JDWSSFdPcR2wO9I7LNUbTuCiaFi_H84HimAjCLK0Y/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1JkXrrYXH3Yhb0bNL0dbDdccs-hkNthar/view?usp=sharing' },
+            { id: 34, name: 'Encontro quadraimob',                                   popUrl: 'https://docs.google.com/document/d/1eB2YCjBiP3FsDq-RJa8PV4p5qj0rAspXMbzer-91Cew/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1LNvBujZG8MP_CBCnhr7r3lGZXgKfZTnL/view?usp=sharing' },
+            { id: 35, name: 'Envio de Boletos de Tráfego (Incorporadores)',          popUrl: 'https://docs.google.com/document/d/1l2x0oU9h31G8_g0XJAdIFcZqzswnK8HUQVom5zQFee8/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1Q_tS-nELrUJLyvbveYpMVjmRFyLTKy8n/view?usp=sharing' },
+            { id: 36, name: 'Envio de Boletos de Tráfego (Quadraimob)',             popUrl: 'https://docs.google.com/document/d/1khKyWyIjxTlGy4xMEDr3Hdi7hYPLj_HwPwBflbyrDp0/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1-rDYXmh90np70lGCemP_uXKwmUmlo9Se/view?usp=sharing' },
+            { id: 37, name: 'Gestão de Portais',                                     popUrl: 'https://docs.google.com/document/d/1wJk2-6Vubl880YG-6W2pZnsWEMaAIXlkH10U11q3qdM/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1OcBTcTwVpFiu5xntmFGDucSBFXHFw8bO/view?usp=sharing' },
+            { id: 38, name: 'Gestão de Site',                                        popUrl: 'https://docs.google.com/document/d/1Dv73I8eR9aZQNzCChxF-cqP4OOgG3CIs0Eldf9wwTLs/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1ijIvDsf5sFnwIRjG37CABcbZ6hTCPTg3/view?usp=sharing' },
+            { id: 39, name: 'Gestão do Estoque de Marketing',                        popUrl: 'https://docs.google.com/document/d/1k0Q0K6q1oTLP3pgSX47-S0P5Qu_2Zy5n16EJKj2HHzo/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1msXuF9V1uTYVzNdKM1huU0rNl0lEgZIc/view?usp=sharing' },
+            { id: 40, name: 'Pagamento de Despesas Internas',                        popUrl: 'https://docs.google.com/document/d/1JBJI7sX2tn1Lzvbt2OoZ3IemXCIOfGc9SpVBXW9AtjI/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1P9Qw7aKRE7wzazseE4sRlFfna5SVVdUw/view?usp=sharing' },
+            { id: 41, name: 'Preparação do Enxoval Institucional',                   popUrl: 'https://docs.google.com/document/d/1Yl3V0UPJiqfihxUSBlgWusgnJKn2WDDaZt-w0Z_k1cs/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1QRHImJxNdhVs55ClWGkeF4fLL_44Zw0l/view?usp=sharing' },
+            { id: 42, name: 'Produção das Placas de Reconhecimento dos Campeões',   popUrl: 'https://docs.google.com/document/d/1rL18NqwahIgRAydRnVevOv2DikyhqfJY6-8NVq4Fsh4/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1JKVaGrI7oMyJTxYrhE77wh-TBKGWQU5f/view?usp=sharing' },
+            { id: 43, name: 'Elaboração do Planejamento de Marketing',               popUrl: 'https://docs.google.com/document/d/1eju5lShOymlYwjFvrWyVthuXqMLPdQB9K5VvZvw9Hmk/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1TI2E-Srzc01NrnrwS3r20BboSlP2IeW4/view?usp=sharing' },
+            { id: 44, name: 'Gestão da Equipe',                                      popUrl: 'https://docs.google.com/document/d/1bvws1mkES_cTov8CHTThFBFLG-HQSr_yn26qdL4ziok/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1Hkw6NnanPnHFhyGfxH3dI2KJrYlU00Qs/view?usp=sharing' },
+            { id: 45, name: 'Organização do Trello na Esteira de Criação',          popUrl: 'https://docs.google.com/document/d/12oig5OIpqpCjB2EPOGUjCTeTAedYv5dpsXQM21D7Gy0/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1GTRUT3XLIZmKJvfe3xzIlLjr_SE6_mXH/view?usp=sharing' },
+            { id: 46, name: 'Organização do Trello no Quadro de Processos',         popUrl: 'https://docs.google.com/document/d/1jl_CMZAyMHNlXJRCH-UJxucbdkFXm7cIlgPfJGfdKDc/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1B-cqJVoBPJk5f31Cjs4j034NMlUwBOZZ/view?usp=sharing' },
+            { id: 47, name: 'Planejamento Orçamentário do MKT',                     popUrl: 'https://docs.google.com/document/d/1PSq7TUahBPMrvVN3JYtM7aO2FLypGuUz1HaJuENGyUk/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1yR4ctOt40Aj_4ItfA2B4HrDpPtRt-9bL/view?usp=sharing' },
+            { id: 48, name: 'Recebimento de Solicitações de Materiais/Serviços',    popUrl: 'https://docs.google.com/document/d/14mtxdZvuBJQpnSzv_V8P44UV7ZNWhUDfEGoD6r59vlw/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/173065VXzDl3dPw6e8UsDgfH44nmiZfHf/view?usp=sharing' },
+            { id: 49, name: 'Retrospectiva do Ano',                                 popUrl: 'https://docs.google.com/document/d/1LTdhwMobt5nxoS9woYvjTWmYSyLTZsX7z8s9VT0ko0A/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/19aoGIcXBX2quSIhNppv0CYOOWcARPPB-/view?usp=sharing' },
+            { id: 50, name: 'Produção de Comunicação Visual de Evento',             popUrl: 'https://docs.google.com/document/d/1_0Zw9CouMbVkQ4LG1eEOdtN-Pr5eLeW7gUy5q4M1WaU/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1cMeb8ecnFd7x_aBh66vlYhyYNZShP5M_/view?usp=sharing' },
+            { id: 51, name: 'Produção de ID Visual de Marca',                       popUrl: 'https://docs.google.com/document/d/1mcLfISsLYx0n1h5vt0SXt_mgtrDXrHQFPBk-2p7Z4ZU/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1MVz0gAFzi-CrQKzDeB-P477Kwx5HwDOH/view?usp=sharing' },
+            { id: 52, name: 'Produção de Material Impresso',                        popUrl: 'https://docs.google.com/document/d/1Oj__eWSQFSXEyCSFw7B-95F36P--xsJfCK7Tcowr5Y4/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/10VDkxrZqhHmBW7-2Qcf5IU1Ln-11gEDV/view?usp=sharing' },
+            { id: 53, name: 'Produção de Peça Digital',                             popUrl: 'https://docs.google.com/document/d/1s30Ze8KQ8AaycqdP9hX59eiRGAkFlBVuPHqp7Yymg34/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/11Ax4e27Tw1Ubao_EA_i_Z-rP7i2nJflx/view?usp=sharing' },
+            { id: 54, name: 'Produção do Troféu dos Campeões',                      popUrl: 'https://docs.google.com/document/d/1AbGGGnXmVShS99tWmZPVCap_FgVX30fax_G8LAKKYdA/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1xCCpwi6Jj3LQNJyKCEj15Q4w63n8iFXH/view?usp=sharing' },
+            { id: 55, name: 'Agendamento de Eventos',                               popUrl: 'https://docs.google.com/document/d/1L9GoOhbBc48UQ0V8zhKTTQYovnUDeiKuzjrxl34pkGQ/edit?usp=drive_link', fluxUrl: 'https://drive.google.com/file/d/1qd-SVMh-Py9oc3mBkuatGKNNOumSfrLQ/view?usp=drive_link' },
+            { id: 56, name: 'Armazenamento de Conteúdos',                           popUrl: 'https://docs.google.com/document/d/1eUwnADUlUNtOGoYO0iXMlApiTfhF0EtiomJyt6L6Fx4/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1iBXBIv3zx12NDvAQe-tGXVK-t2O4vJwT/view?usp=sharing' },
+            { id: 57, name: 'Atendimento de Redes Sociais',                         popUrl: 'https://docs.google.com/document/d/1F6AIhl14GzsBr9-uZgYQAueMroMf-y3vtnD9emzCapc/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/19YyhNEaJNQegPa0SorYYnXFHetsW38al/view?usp=sharing' },
+            { id: 58, name: 'Cobertura de Encontro Quadraimob',                     popUrl: 'https://docs.google.com/document/d/1sInujEK2gARhI2iIqRIrih_FGNrzjt0E_R1tazUyH1I/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/11pCZ-080rvRhDFAhvYNCihHmiVCS4Mv4/view?usp=sharing' },
+            { id: 59, name: 'Cobertura de Multirão',                                popUrl: 'https://docs.google.com/document/d/1D129KMkaDJC4sdKxKqn_m7OowrlNFXNQ8XEP6h4Hfnw/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1NiUElXBQQm5U2wxZwDvaT7u9s1EVvrK8/view?usp=sharing' },
+            { id: 60, name: 'Confecção de Relatório de Performance de Mídia',       popUrl: 'https://docs.google.com/document/d/1JOTcVGDZU0bhdagI5_gPwa0533EBjov-_x-UuSy2pAw/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1BzFlDMdE549reTwtkoTPYBc4RVAi843Z/view?usp=sharing' },
+            { id: 61, name: 'Controle do Uber do Marketing',                        popUrl: 'https://docs.google.com/document/d/1hqSFw8J8zsbi70Lar3dhbcrk0pbpgAcm_cXr_Edw_Vw/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1rjoSbub-rH_NcQ3jr6xgSnWHTwHK0Qxd/view?usp=sharing' },
+            { id: 62, name: 'Criação de Vídeos',                                    popUrl: 'https://docs.google.com/document/d/1_r_0y0vKGDn9G2c2c_8rlCNxvHMxBeBk36ko7eQiuas/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1jt5bFHPoArkljz6dP4QlPUDPmhUwZ9lt/view?usp=sharing' },
+            { id: 63, name: 'Planejamento de Mídias Orgânicas',                     popUrl: 'https://docs.google.com/document/d/1C0_saXw54COd9CUOXgKJQOTYCMPiKSu9RcWy2hlT7Gs/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/16bOpetW0NMd1dn3_DpWSfma4nryKSx26/view?usp=sharing' },
+            { id: 64, name: 'Planilha Semanal de Eventos dos Diretores Comerciais', popUrl: 'https://docs.google.com/document/d/19QkMEH8OkiUIiHibO08pFICFZzklnQypugP4VAcElgE/edit?usp=sharing', fluxUrl: '#' },
+            { id: 65, name: 'Pós Encontro Quadraimob',                              popUrl: 'https://docs.google.com/document/d/15b9gEG247DIt8UTQYjHXI9c5ZvlheJaYycihI013wco/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1WdWbkWEWozKQH0aVnCE7e4Gm4JW1xDdZ/view?usp=sharing' },
+            { id: 66, name: 'Registro de Eventos',                                  popUrl: 'https://docs.google.com/document/d/1ZPKqOgF6kMUAj9SDz8wON99H3qITyVcKOsGY3iH2wjY/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1Q2KcoRQCnZ4WnU3aNA1jgEZZFMMp6zRl/view?usp=sharing' },
+            { id: 67, name: 'Emissão de Boletos de Tráfego (Incorporadores)',       popUrl: 'https://docs.google.com/document/d/1iCo1gAGjqdkf3uP4u9lS2EzXDD--_kPFxgkcytyMuYs/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1ZGZ9vDZp_a-_gvscvEcO1oWIrCmxvl9Y/view?usp=sharing' },
+            { id: 68, name: 'Emissão de Boletos de Tráfego (quadraimob)',           popUrl: 'https://docs.google.com/document/d/1wuQTuGuYwlwF5-2HTrXqNexmm4uu0YY9qYL8IAOagM8/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1q4B89yFiEvhPvK0CMaknDmlHSRAzPJnd/view?usp=sharing' },
+            { id: 69, name: 'Planejamento de Campanha de Tráfego',                 popUrl: 'https://docs.google.com/document/d/1xWq55-yEpfVmN0eX2tWdAfyKi7G4QX7i-WiT6MvNmwQ/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/17yqS88wyfcg0qxTasu5c_y-RXZaA4CAA/view?usp=sharing' },
+            { id: 70, name: 'Plano de Mídia',                                       popUrl: 'https://docs.google.com/document/d/1SwHeakc6aXx6IR8fgeauWuHBJnf21W9lRUH73fxQJU4/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1cOlHszkxNfcYxuJQpTR4-jhOymZWs0_c/view?usp=sharing' },
+            { id: 71, name: 'Relatório de Performance dos Anúncios',               popUrl: 'https://docs.google.com/document/d/1tMXkaNfV9KbAIDWInh_zj0t8V_u0D5grHa54A5MZ3SY/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/10QhqZYDFuXIAeED_NqlpLwnflNtkJ6yD/view?usp=sharing' },
+            { id: 72, name: 'Solicitação de Criativo de Anúncio',                  popUrl: 'https://docs.google.com/document/d/17HbKWvol5achkdqzsA-AatmB-Nf3CqDaAU417e4Pd4I/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1gFjQVwoETgGg1iwAHOmyeuPGVp2rSYHz/view?usp=sharing' },
+            { id: 73, name: 'Treinamento para Corretores',                          popUrl: 'https://docs.google.com/document/d/19E6ZqXNf_2X7vvmYTD03TB3shWsYNvvpEvt8tuXKvCk/edit?usp=sharing', fluxUrl: 'https://drive.google.com/file/d/1mYh4vhsGpuIayAV_Jp7pF77EQGUIoDF6/view?usp=sharing' },
+          ]
+        },
+      ]
+    },
+  ]
+};
+
+const ICO = {
+  briefcase: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+  users:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  chart:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+  megaphone: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
+  doc:       `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+  flow:      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M9 6h6.5a3.5 3.5 0 0 1 0 7H9"/><path d="m15 18-3 3 3 3"/></svg>`,
+  search:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1fa8d8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  minus:     `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+};
+
+const st = { cat: 'remodelados', area: 'all', q: '' };
+
+const allAreas = () => DATA.categories.flatMap(c => c.areas);
+const catAreas = () => DATA.categories.find(c => c.id === st.cat)?.areas ?? [];
+const total    = () => DATA.categories.reduce((s,c) => s + c.areas.reduce((ss,a) => ss + a.processes.length, 0), 0);
+
+function hl(text, q) {
+  if (!q) return text;
+  const esc = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${esc})`, 'gi'), '<mark>$1</mark>');
+}
+
+function openLink(url, type) {
+  if (!url || url === '#') {
+    alert(`O link do ${type} ainda não foi configurado.\n\nEdite o index.html e substitua "#" pelo link real do Google Drive.`);
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function renderStats() {
+  const t = total();
+  let html = `<div class="stat"><span class="stat-pip" style="background:#66cff5"></span><span class="stat-lbl">Total</span><span class="stat-val">${t} processos</span></div>`;
+  DATA.categories.forEach((c, i) => {
+    const cnt = c.areas.reduce((s,a) => s + a.processes.length, 0);
+    html += `<div class="stat"><span class="stat-pip" style="background:${i===0?'#66cff5':'#c97ef5'}"></span><span class="stat-lbl">${c.name}</span><span class="stat-val">${cnt}</span></div>`;
+  });
+  allAreas().forEach(a => {
+    html += `<div class="stat"><span class="stat-pip" style="background:${a.color}"></span><span class="stat-lbl">${a.name}</span><span class="stat-val">${a.processes.length}</span></div>`;
+  });
+  document.getElementById('statsInner').innerHTML = html;
+}
+
+function renderCatTabs() {
+  const el = document.getElementById('catTabs');
+  el.style.display = st.q ? 'none' : '';
+  el.innerHTML = DATA.categories.map(c => {
+    const cnt = c.areas.reduce((s,a) => s + a.processes.length, 0);
+    return `<button class="cat-btn ${c.id === st.cat ? 'active' : ''}" onclick="setCat('${c.id}')" role="tab" aria-selected="${c.id === st.cat}">${c.name}<span class="cat-badge">${cnt}</span></button>`;
+  }).join('');
+}
+
+function renderFilters() {
+  const areas = st.q ? allAreas() : catAreas();
+  const allActive = st.area === 'all';
+  let html = `<button class="achip ${allActive ? 'active' : ''}"
+    style="${allActive ? 'background:#2d4258;border-color:#2d4258;color:#ffffff;font-weight:700;' : ''}"
+    onclick="setArea('all')"><span class="cpip" style="background:${allActive ? 'rgba(255,255,255,0.7)' : 'var(--text-2)'}"></span>Todas</button>`;
+  html += areas.map(a => {
+    const active = st.area === a.id;
+    return `<button class="achip ${active ? 'active' : ''}"
+      style="${active ? `background:${a.color};border-color:${a.color};color:#07090e;font-weight:700;` : ''}"
+      onclick="setArea('${a.id}')"><span class="cpip" style="background:${active ? '#07090e' : a.color}"></span>${a.name}</button>`;
+  }).join('');
+  document.getElementById('areaFilters').innerHTML = html;
+}
+
+function renderArea(area, procs, showTag, catName) {
+  const cards = procs.map((p, i) => `
+    <div class="pcard" style="animation-delay:${Math.min(i * 25, 270)}ms">
+      ${showTag ? `<div class="card-tag" style="display:block;background:${area.color}18;color:${area.color}">${area.name}</div>` : ''}
+      <div class="pname">${hl(p.name, st.q)}</div>
+      <div class="cbtns">
+        ${p.popUrl === '#'
+          ? `<span class="dbtn-na">${ICO.minus} POP não elaborado</span>`
+          : `<button class="dbtn pop" onclick="openLink('${p.popUrl}','POP')" data-tip="Abrir POP no Drive">${ICO.doc} POP</button>`}
+        ${p.fluxUrl === '#'
+          ? `<span class="dbtn-na">${ICO.minus} Fluxograma não elaborado</span>`
+          : `<button class="dbtn flux" onclick="openLink('${p.fluxUrl}','Fluxograma')" data-tip="Abrir Fluxograma no Drive">${ICO.flow} Fluxograma</button>`}
+      </div>
+    </div>`).join('');
+
+  const catLbl = showTag && catName
+    ? `<span class="area-cat" style="color:${area.color};border-color:${area.color}40">${catName}</span>` : '';
+
+  return `<div class="area-sec">
+    <div class="area-head">
+      <div class="area-ico" style="background:${area.color}18;color:${area.color}">${ICO[area.icon] || ICO.doc}</div>
+      <div class="area-title">${area.name}</div>${catLbl}
+      <div class="area-cnt" style="background:${area.color}18;color:${area.color}">${procs.length} processo${procs.length!==1?'s':''}</div>
+    </div>
+    <div class="pgrid">${cards}</div>
+  </div>`;
+}
+
+function render() {
+  renderCatTabs();
+  renderFilters();
+
+  const content = document.getElementById('contentArea');
+  const empty   = document.getElementById('emptyState');
+  const banner  = document.getElementById('searchBanner');
+
+  if (st.q) {
+    const byArea = {};
+    let found = 0;
+    for (const cat of DATA.categories) {
+      for (const area of cat.areas) {
+        if (st.area !== 'all' && area.id !== st.area) continue;
+        const matched = area.processes.filter(p => p.name.toLowerCase().includes(st.q.toLowerCase()));
+        if (matched.length) { byArea[area.id] = { area, procs: matched, catName: cat.name }; found += matched.length; }
+      }
+    }
+    if (!found) { content.innerHTML = ''; empty.classList.add('show'); banner.classList.remove('show'); return; }
+    empty.classList.remove('show');
+    banner.innerHTML = `${ICO.search} <span>Encontrado <strong>${found} processo${found!==1?'s':''}</strong> para &ldquo;<strong>${st.q}</strong>&rdquo;</span>`;
+    banner.classList.add('show');
+    content.innerHTML = Object.values(byArea).map(({area, procs, catName}) => renderArea(area, procs, true, catName)).join('');
+  } else {
+    banner.classList.remove('show');
+    empty.classList.remove('show');
+    const cat   = DATA.categories.find(c => c.id === st.cat);
+    const areas = st.area === 'all' ? cat.areas : cat.areas.filter(a => a.id === st.area);
+    if (!areas.length) { content.innerHTML = ''; empty.classList.add('show'); return; }
+    content.innerHTML = areas.map(a => renderArea(a, a.processes, false, null)).join('');
+  }
+}
+
+function setCat(id)  { st.cat = id; st.area = 'all'; render(); }
+function setArea(id) { st.area = id; render(); }
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  st.q = '';
+  document.getElementById('searchClear').classList.remove('show');
+  render();
+}
+
+document.getElementById('searchInput').addEventListener('input', function () {
+  st.q = this.value.trim();
+  document.getElementById('searchClear').classList.toggle('show', st.q.length > 0);
+  render();
+});
+
+renderStats();
+render();
+</script>
+</body>
+</html>
